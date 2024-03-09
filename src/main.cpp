@@ -8,11 +8,15 @@
 #define PINO_MOTOR_DC1 D1
 #define PINO_MOTOR_DC2 D2
 #define PINO_MOTOR_A D5
-#define PINO_MOTOR_B D6
+#define PINO_MOTOR_B D6//sentido
 #define PINO_FIM_DE_CURSO_1 D3
+#define PINO_FIM_DE_CURSO_2 D4
+#define PINO_FIM_DE_CURSO_3 D8
+#define PINO_FIM_DE_CURSO_4 D0
 #define ENABLE D7
 //Cria motor 
 AccelStepper stepper(1, PINO_MOTOR_A, PINO_MOTOR_B);
+int VelocidadeBase;
 
 //Constantes
 const long REGIAO_ATUACAO_CARRO = 1000;
@@ -33,28 +37,47 @@ void limpar_painel();
 
 // //Interrupcoes
 
-  void IRAM_ATTR carro_fim()
-  {
-    Serial.println("interupt1");
-    stepper.disableOutputs();
-    LIMPANDO_PAINEL = false;
-    MOVIMENTANDO_CARRO = false;
-    digitalWrite(ENABLE, HIGH);
-    analogWrite(D1,0);
-  }
+void IRAM_ATTR carro_fim_inferior()
+{
+  Serial.println("Fin de curso Caro Inferior -");
+  stepper.disableOutputs();
+  LIMPANDO_PAINEL = false;
+  MOVIMENTANDO_CARRO = false;
+  digitalWrite(ENABLE, HIGH);
+  analogWrite(D1,0);//Desativa motor base
+}
+void IRAM_ATTR carro_fim_superior()
+{
+  Serial.println("Fin de curso Caro Superior +");
+  
+}
+void IRAM_ATTR base_fim_inferior()
+{
+  Serial.println("Fin de curso BASE Inferior -");
+  
+}
+void IRAM_ATTR base_fim_superior()
+{
+  Serial.println("Fin de curso BASE Superior +");
+  
+}
 
 void setup()
 {
   //PINOS
-  
   pinMode(PINO_MOTOR_DC1,OUTPUT);
   pinMode(PINO_MOTOR_DC2,OUTPUT); 
   analogWriteFreq(1000);
   pinMode(ENABLE, OUTPUT); 
   //FIM DE CURSOS
   pinMode(PINO_FIM_DE_CURSO_1, INPUT_PULLUP);
-  attachInterrupt(PINO_FIM_DE_CURSO_1,carro_fim, FALLING);
-
+  attachInterrupt(PINO_FIM_DE_CURSO_1,carro_fim_inferior, FALLING);
+  pinMode(PINO_FIM_DE_CURSO_2, INPUT_PULLUP);
+  attachInterrupt(PINO_FIM_DE_CURSO_2,carro_fim_superior, FALLING);
+  pinMode(PINO_FIM_DE_CURSO_3, INPUT_PULLUP);
+  attachInterrupt(PINO_FIM_DE_CURSO_3,base_fim_inferior, FALLING);
+  pinMode(PINO_FIM_DE_CURSO_4, INPUT_PULLUP);
+  attachInterrupt(PINO_FIM_DE_CURSO_4,base_fim_superior, FALLING);
 
   //CONFIGURA SERIAL
   Serial.begin(9600);
@@ -63,7 +86,10 @@ void setup()
   stepper.setMaxSpeed(2000); //SPEED = Steps / second
   stepper.setAcceleration(1000); //ACCELERATION = Steps /(second)^2
   //stepper.disableOutputs();
-
+  
+  //CONFIGURA VELOCIDADE DO MOTOR BASE A 0
+  VelocidadeBase=0;
+  
   //AGUARDA PARA INICIAR
   delay(1000);
 }
@@ -100,8 +126,6 @@ void imprimi_informacoes() //ajustar
 
 void menu_escolha() //ajustar
 {
-  
- 
 if (Serial.available()) {
      comando = Serial.read();
   
@@ -116,25 +140,25 @@ if (Serial.available()) {
 
     stepper.enableOutputs();
     stepper.moveTo(novaPosicao);
-     Serial.println("movendo");
+     Serial.println("Movendo Caro");
   }
   
   //MOVER BASE
- if (comando =='M' )
+ if (comando =='v' )
   {
-    texto.remove('M');
-    int novaPosicao = texto.toInt();//trasforma inteiro 
+    texto.remove('v');
+    VelocidadeBase = texto.toInt();//trasforma inteiro 
     texto ="";//nada
    
-    analogWrite(PINO_MOTOR_DC1,novaPosicao);
+    analogWrite(PINO_MOTOR_DC1,VelocidadeBase);
     
-     Serial.println("movendo");
+     Serial.println("Movimntando Base");
   }
 
   //OPERACAO LIMPEZA
  else if (comando == 'l')
   {
-    texto.remove('m');
+    texto.remove('l');
     int novaPosicao = texto.toInt();//trasforma inteiro 
     texto ="";//nada
     
@@ -148,7 +172,24 @@ if (Serial.available()) {
   else if (comando == '@')
   {
       texto ="";//nada
-      Serial.println("apago");
+      
+      stepper.disableOutputs();
+      LIMPANDO_PAINEL = false;
+      MOVIMENTANDO_CARRO = false;
+      digitalWrite(ENABLE, HIGH);
+      analogWrite(D1,0);
+      Serial.println("==PARANDO==");
+      Serial.println("Apagou Variavei");
+      Serial.println("Desativando Motores");
+  }
+  else if (comando == 'H')
+  {
+      texto ="";//nada
+      Serial.println("H = Ajuda.");
+      Serial.println("(valor)+m = Valor que incrementa o posicionamneto do caro. exemplo: 100m");
+      Serial.println("(valor)+v = Valor que corespondente a velocidade da base. exemplo: 500v");
+      Serial.println("(valor)+l = Valor corespondente . exemplo: 500M");
+      Serial.println("@ = Apaga variaveis e desativa motores");
   }
   else {
       texto.concat(comando);//concatenando os valores
@@ -174,10 +215,25 @@ void movimentar_carro() //Testar
 
 void limpar_painel() //add LIMPANDO_PAINEL = false ao chegar no endstop
 {
-  if(!MOVIMENTANDO_CARRO)
-  {
-    digitalWrite(ENABLE, HIGH);
-    stepper.moveTo(-1 * stepper.currentPosition());
-    MOVIMENTANDO_CARRO = true;
-  }
+  
+  
+    if(!MOVIMENTANDO_CARRO)
+    {
+      digitalWrite(ENABLE, HIGH);
+      stepper.moveTo(-1 * stepper.currentPosition());
+      MOVIMENTANDO_CARRO = true;
+    }
+  
+  
+  /*
+  sentidoDElimpesa for + = ele vai 
+  se nao ele volta
+
+  fim de curso caro, inverte sentidoDElimpesa
+  
+  para mudar sentido presisa mudae novaposisaode l para negativo
+  
+  
+  */
 }
+
