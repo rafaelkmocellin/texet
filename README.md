@@ -1,0 +1,5 @@
+PROTÓTIPO DE BAIXO CUSTO PARA LIMPEZA DE PAINÉIS FOTOVOLTAICOS
+
+OLA o Objetivo Geral deste projeto é desenvolver um protótipo de baixo custo para manter de forma autônoma os painéis fotovoltaicos limpos do Instituto Federal de Santa Catarina, câmpus Chapecó.
+
+É visível no nosso dia a dia o aumento considerável da adesão de painéis fotovoltaicos em residências, porém as soluções de limpeza dos mesmos acabam sendo muito trabalhosas, inviáveis, ou perigosas, já que  estes painéis geralmente estão instalados em locais de difícil acesso. Por isso o proprietário tende a negligenciar ou muitas vezes não compensa financeiramente realizar esta manutenção. Também tendo em vista que este é um problema que está presente no câmpus Chapecó do instituto federal catarinense, que sofre muito com isto, pelo fato dos painéis fotovoltaicos estarem localizados perto, e num nível  abaixo de uma estrada de terra com grande movimento, estabelecendo uma necessidade de limpeza constante.Por estes motivos este trabalho possui o intuito de projetar uma solução viável para manutenção e limpeza constante destes painéis.
