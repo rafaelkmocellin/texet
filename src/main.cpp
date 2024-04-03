@@ -9,10 +9,10 @@
 #define PINO_MOTOR_DC2 D2
 #define PINO_MOTOR_A D5
 #define PINO_MOTOR_B D6//sentido
-#define PINO_FIM_DE_CURSO_1 D3
+#define PINO_FIM_DE_CURSO_1 11 //D3
 #define PINO_FIM_DE_CURSO_2 D4
 #define PINO_FIM_DE_CURSO_3 D8
-#define PINO_FIM_DE_CURSO_4 D0
+#define PINO_FIM_DE_CURSO_4 D0//nao esta funcinando
 #define ENABLE D7
 //Cria motor 
 AccelStepper stepper(1, PINO_MOTOR_A, PINO_MOTOR_B);
@@ -27,6 +27,7 @@ volatile bool LIMPANDO_PAINEL = false;
 
 //Variaveis globais 
 char comando;
+//int novaPosicao=0;
 String texto;
 //Funcoes
 String verifica_seriais();
@@ -34,31 +35,49 @@ void imprimi_informacoes();
 void menu_escolha();
 void movimentar_carro();
 void limpar_painel();
-
+bool INDO=0;
+bool VINDO=1;
+bool sentidoDElimpesa=INDO;
 // //Interrupcoes
 
 void IRAM_ATTR carro_fim_inferior()
 {
-  Serial.println("Fin de curso Caro Inferior -");
+  Serial.println("(1)Fin de curso Caro Inferior -");
+  /*--------------------------------para parar
   stepper.disableOutputs();
   LIMPANDO_PAINEL = false;
   MOVIMENTANDO_CARRO = false;
   digitalWrite(ENABLE, HIGH);
   analogWrite(D1,0);//Desativa motor base
+  */
+  if(MOVIMENTANDO_CARRO)
+  {  
+    stepper.disableOutputs();
+    LIMPANDO_PAINEL = false;
+    MOVIMENTANDO_CARRO = false;
+    digitalWrite(ENABLE, HIGH);
+    analogWrite(D1,0);//Desativa motor base
+  }
+  else if(LIMPANDO_PAINEL)
+  {
+    stepper.moveTo(-1*(novaPosicao));
+    Serial.println("Vindo limpando");
+  }
+
 }
 void IRAM_ATTR carro_fim_superior()
 {
-  Serial.println("Fin de curso Caro Superior +");
+  Serial.println("(2)Fin de curso Caro Superior +");
   
 }
 void IRAM_ATTR base_fim_inferior()
 {
-  Serial.println("Fin de curso BASE Inferior -");
+  Serial.println("(3)Fin de curso BASE Inferior -");
   
 }
 void IRAM_ATTR base_fim_superior()
 {
-  Serial.println("Fin de curso BASE Superior +");
+  Serial.println("(4)Fin de curso BASE Superior +");
   
 }
 
@@ -103,8 +122,8 @@ void loop()
   //OPERACOES
   if(MOVIMENTANDO_CARRO)
     movimentar_carro();
-  
-  else if(LIMPANDO_PAINEL)
+  //else
+  if(LIMPANDO_PAINEL)
    limpar_painel();
 
 }
@@ -137,6 +156,7 @@ if (Serial.available()) {
     texto ="";//nada
    
     MOVIMENTANDO_CARRO = true;
+    LIMPANDO_PAINEL = false;
 
     stepper.enableOutputs();
     stepper.moveTo(novaPosicao);
@@ -163,7 +183,7 @@ if (Serial.available()) {
     texto ="";//nada
     
     LIMPANDO_PAINEL = true;
-    MOVIMENTANDO_CARRO = LIMPANDO_PAINEL;
+    MOVIMENTANDO_CARRO = false;
 
     stepper.enableOutputs();
     stepper.moveTo(novaPosicao);
@@ -215,16 +235,42 @@ void movimentar_carro() //Testar
 
 void limpar_painel() //add LIMPANDO_PAINEL = false ao chegar no endstop
 {
-  
-  
-    if(!MOVIMENTANDO_CARRO)
+  if(sentidoDElimpesa==INDO)
+  {
+    if (stepper.distanceToGo() == 0)
     {
-      digitalWrite(ENABLE, HIGH);
-      stepper.moveTo(-1 * stepper.currentPosition());
-      MOVIMENTANDO_CARRO = true;
+    stepper.move(-1 * (50));
+    sentidoDElimpesa=VINDO;
     }
-  
-  
+    else
+    {
+    digitalWrite(ENABLE, LOW);
+    //Serial.println(" rum ");
+    stepper.run();
+    }
+  }
+  else if(sentidoDElimpesa==VINDO)
+  {
+    if (stepper.distanceToGo()==0)
+    {
+      
+    stepper.move(100);
+    sentidoDElimpesa=INDO;
+    }
+    else{
+    digitalWrite(ENABLE, LOW);
+    //Serial.println(" rum ");
+    stepper.run();
+    }
+  } 
+ /*
+  if(!LIMPANDO_PAINEL)
+  {
+      digitalWrite(ENABLE, HIGH);
+      stepper.moveTo(-1 * (stepper.currentPosition()));
+      MOVIMENTANDO_CARRO = true;
+  }
+  */
   /*
   sentidoDElimpesa for + = ele vai 
   se nao ele volta
